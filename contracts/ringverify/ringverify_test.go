@@ -95,7 +95,7 @@ func TestVerify(t *testing.T) {
 	test, err := setup()
 	if err != nil {
 		t.Errorf("Cannot deploy RingVerify: %v", err)
-	}	
+	}
 
 	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 	msg := "helloworld"
@@ -104,7 +104,7 @@ func TestVerify(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	
+
 	sig, err := ring.Sign(msgHash, keyring, privkey, 0)
 	if err != nil {
 		t.Error("error when signing with ring size of 2")

@@ -185,7 +185,7 @@ func verify() {
 	file, err := ioutil.ReadFile(fp)
 	if err != nil {
 		log.Fatal("could not read sigature from ", fp, "\n", err)
-	}	
+	}
 
 	sigBytes, err := hex.DecodeString(string(file))
 	if err != nil {
@@ -246,7 +246,7 @@ func main() {
 			fmt.Println("need to supply path to signature: ring-go --verify /path/to/signature.sig")
 			os.Exit(0)
 		}
-		
+
 		verify()
 	}
 
@@ -262,7 +262,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		// sign message 
+		// sign message
 		file, err := ioutil.ReadFile("./message.txt")
 		if err != nil {
 			log.Fatal("could not read message from message.txt", err)
@@ -275,20 +275,20 @@ func main() {
 			log.Fatal(err)
 		}
 
-		// secret index 
+		// secret index
 		sb, err := rand.Int(rand.Reader, new(big.Int).SetInt64(int64(size)))
 		if err != nil {
 			log.Fatal(err)
 		}
 		s := int(sb.Int64())
 
-		// generate keyring 
+		// generate keyring
 		keyring, err := ring.GenNewKeyRing(size, privkey, s)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// sign 
+		// sign
 		sig, err := ring.Sign(msgHash, keyring, privkey, s)
 		if err != nil {
 			log.Fatal(err)
@@ -304,7 +304,7 @@ func main() {
 		fmt.Println("signature: ")
 		fmt.Println(fmt.Sprintf("0x%x", byteSig))
 
-		// verify signature 
+		// verify signature
 		ver := ring.Verify(sig)
 		fmt.Println("verified? ", ver)
 		os.Exit(0)
