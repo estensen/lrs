@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/ecdsa"
-	//"crypto/elliptic"
 	"crypto/rand"
 	"encoding/hex"
 	"flag"
@@ -13,10 +12,9 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	//"strings"
 	"time"
 
-	"github.com/noot/ring-go/ring"
+	"github.com/estensen/linkable-ring-signatures/ring"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/crypto/sha3"
