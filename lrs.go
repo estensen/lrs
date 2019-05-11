@@ -77,7 +77,6 @@ func gen() {
 		log.Fatal(err)
 	}
 	err = ioutil.WriteFile(fp, []byte(fmt.Sprintf("%x%x", pub.X, pub.Y)), 0644)
-	//err = ioutil.WriteFile(fp, elliptic.Marshal(crypto.S256(), pub.X, pub.Y), 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
