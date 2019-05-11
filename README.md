@@ -30,11 +30,6 @@ $ go run . --verify /path/to/signature.sig
 $ go run . --link /path/to/signature1.sig /path/to/signature2.sig
 ```
 
-### Run demo with 100 public keys
-```sh
-$ go run . --demo 100
-```
-
 ### Benchmark 1000 public keys
 ```sh
 $ go run . --benchmark 1000

@@ -25,7 +25,6 @@ func main() {
 	signPtr := flag.Bool("sign", false, "sign a message with a ring signature")
 	verifyPtr := flag.Bool("verify", false, "verify a ring signature")
 	linkablePtr := flag.Bool("linkable", false, "check if signatures are linkable")
-	demoPtr := flag.Bool("demo", false, "demo signing a message")
 	benchmarkPtr := flag.Bool("benchmark", false, "benchmark sign, verify and storage space")
 
 	if len(os.Args) < 2 {
@@ -43,8 +42,6 @@ func main() {
 		verify()
 	} else if *linkablePtr {
 		linkable()
-	} else if *demoPtr {
-		demo()
 	} else if *benchmarkPtr {
 		benchmark()
 	}
@@ -286,66 +283,6 @@ func linkable() {
 
 	link := ring.Link(sig1, sig2)
 	fmt.Println("linkable?", link)
-	os.Exit(0)
-}
-
-func demo() {
-	if len(os.Args) < 3 {
-		fmt.Println("need to supply size of ring: go run . --demo 17")
-		os.Exit(0)
-	}
-
-	// Generate new private/public keypair
-	privkey, err := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Sign message
-	file, err := ioutil.ReadFile("./message.txt")
-	if err != nil {
-		log.Fatal("could not read message from message.txt", err)
-	}
-	msgHash := sha3.Sum256(file)
-
-	// Get ring size from arguments
-	size, err := strconv.Atoi(os.Args[2])
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Secret index
-	sb, err := rand.Int(rand.Reader, new(big.Int).SetInt64(int64(size)))
-	if err != nil {
-		log.Fatal(err)
-	}
-	s := int(sb.Int64())
-
-	// Generate keyring
-	keyring, err := ring.GenNewKeyRing(size, privkey, s)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Sign
-	sig, err := ring.Sign(msgHash, keyring, privkey, s)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(sig.S)
-
-	byteSig, err := sig.Serialize()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("signature: ")
-	fmt.Println(fmt.Sprintf("0x%x", byteSig))
-
-	// Verify signature
-	ver := ring.Verify(sig)
-	fmt.Println("verified? ", ver)
 	os.Exit(0)
 }
 
