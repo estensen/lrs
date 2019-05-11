@@ -10,12 +10,25 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-func createSig(size int, s int) *RingSign {
-	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
+var (
+	privkey *ecdsa.PrivateKey
+	msgHash [32]byte
+)
 
+func TestGenerateKey(t *testing.T) {
+	var err error
+	privkey, err = crypto.GenerateKey()
+	if err != nil {
+		t.Error("Could not generate key-pair")
+	}
+}
+
+func TestCreateMsgHash(t *testing.T) {
 	msg := "helloworld"
-	msgHash := sha3.Sum256([]byte(msg))
+	msgHash = sha3.Sum256([]byte(msg))
+}
 
+func createSig(size int, s int) *RingSign {
 	keyring, err := GenNewKeyRing(size, privkey, s)
 	if err != nil {
 		return nil
@@ -29,8 +42,6 @@ func createSig(size int, s int) *RingSign {
 }
 
 func TestGenNewKeyRing(t *testing.T) {
-	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
-
 	keyring, err := GenNewKeyRing(2, privkey, 0)
 	if err != nil {
 		t.Error(err)
@@ -44,8 +55,6 @@ func TestGenNewKeyRing(t *testing.T) {
 }
 
 func TestGenNewKeyRing3(t *testing.T) {
-	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
-
 	keyring, err := GenNewKeyRing(3, privkey, 1)
 	if err != nil {
 		t.Error(err)
@@ -59,8 +68,6 @@ func TestGenNewKeyRing3(t *testing.T) {
 }
 
 func TestGenKeyRing(t *testing.T) {
-	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
-
 	s := 0
 	size := 3
 
@@ -90,8 +97,6 @@ func TestGenKeyRing(t *testing.T) {
 }
 
 func TestGenKeyImage(t *testing.T) {
-	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
-
 	image := GenKeyImage(privkey)
 
 	if image == nil {
@@ -112,11 +117,6 @@ func TestHashPoint(t *testing.T) {
 }
 
 func TestSign(t *testing.T) {
-	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
-
-	msg := "helloworld"
-	msgHash := sha3.Sum256([]byte(msg))
-
 	keyring, err := GenNewKeyRing(2, privkey, 0)
 	if err != nil {
 		t.Error(err)
@@ -132,11 +132,6 @@ func TestSign(t *testing.T) {
 }
 
 func TestSignAgain(t *testing.T) {
-	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
-
-	msg := "helloworld"
-	msgHash := sha3.Sum256([]byte(msg))
-
 	keyring, err := GenNewKeyRing(100, privkey, 17)
 	if err != nil {
 		t.Error(err)
@@ -181,7 +176,7 @@ func TestVerifyWrongMessage(t *testing.T) {
 		t.Error("signing error")
 	}
 
-	msg := "noot"
+	msg := "hello"
 	msgHash := sha3.Sum256([]byte(msg))
 	sig.M = msgHash
 
@@ -192,17 +187,12 @@ func TestVerifyWrongMessage(t *testing.T) {
 }
 
 func TestLinkabilityTrue(t *testing.T) {
-	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
-
-	msg1 := "helloworld"
-	msgHash1 := sha3.Sum256([]byte(msg1))
-
 	keyring1, err := GenNewKeyRing(2, privkey, 0)
 	if err != nil {
 		t.Error(err)
 	}
 
-	sig1, err := Sign(msgHash1, keyring1, privkey, 0)
+	sig1, err := Sign(msgHash, keyring1, privkey, 0)
 	if err != nil {
 		t.Error("error when signing with ring size of 2")
 	} else {
@@ -235,17 +225,12 @@ func TestLinkabilityTrue(t *testing.T) {
 }
 
 func TestLinkabilityFalse(t *testing.T) {
-	privkey1, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
-
-	msg1 := "helloworld"
-	msgHash1 := sha3.Sum256([]byte(msg1))
-
-	keyring1, err := GenNewKeyRing(2, privkey1, 0)
+	keyring1, err := GenNewKeyRing(2, privkey, 0)
 	if err != nil {
 		t.Error(err)
 	}
 
-	sig1, err := Sign(msgHash1, keyring1, privkey1, 0)
+	sig1, err := Sign(msgHash, keyring1, privkey, 0)
 	if err != nil {
 		t.Error("error when signing with ring size of 2")
 	} else {
@@ -254,7 +239,10 @@ func TestLinkabilityFalse(t *testing.T) {
 		spew.Dump(sig1.I)
 	}
 
-	privkey2, _ := crypto.HexToECDSA("01ad23ee4fbabbcf31dda1270154a623f5f7c07433193ff07395b33ac5bf2bea")
+	privkey2, err := crypto.GenerateKey()
+	if err != nil {
+		t.Error("Could not generate key-pair")
+	}
 	msg2 := "hello world"
 	msgHash2 := sha3.Sum256([]byte(msg2))
 
