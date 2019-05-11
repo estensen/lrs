@@ -13,5 +13,8 @@
 
 .idea/
 
+# Project specific files
 test_file
+keystore/
+signatures
 
