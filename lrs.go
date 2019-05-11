@@ -26,6 +26,7 @@ func main() {
 	verifyPtr := flag.Bool("verify", false, "verify a ring signature")
 	linkablePtr := flag.Bool("linkable", false, "check if signatures are linkable")
 	demoPtr := flag.Bool("demo", false, "demo signing a message")
+	benchmarkPtr := flag.Bool("benchmark", false, "benchmark sign, verify and storage space")
 
 	if len(os.Args) < 2 {
 		flag.PrintDefaults()
@@ -44,6 +45,8 @@ func main() {
 		linkable()
 	} else if *demoPtr {
 		demo()
+	} else if *benchmarkPtr {
+		benchmark()
 	}
 }
 
@@ -288,7 +291,7 @@ func linkable() {
 
 func demo() {
 	if len(os.Args) < 3 {
-		fmt.Println("need to supply size of ring: eg. ring-go --demo 17")
+		fmt.Println("need to supply size of ring: go run . --demo 17")
 		os.Exit(0)
 	}
 
@@ -343,5 +346,54 @@ func demo() {
 	// Verify signature
 	ver := ring.Verify(sig)
 	fmt.Println("verified? ", ver)
+	os.Exit(0)
+}
+
+func benchmark() {
+	if len(os.Args) < 3 {
+		fmt.Println("need to supply size of ring: go run . --benchmark 17")
+		os.Exit(0)
+	}
+
+	privkey, err := crypto.GenerateKey()
+	if err != nil {
+		log.Fatal("Could not generate key-pair", err)
+	}
+
+	file, err := ioutil.ReadFile("./message.txt")
+	if err != nil {
+		log.Fatal("could not read message from message.txt", err)
+	}
+	msgHash := sha3.Sum256(file)
+
+	size, err := strconv.Atoi(os.Args[2])
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sb, err := rand.Int(rand.Reader, new(big.Int).SetInt64(int64(size)))
+	if err != nil {
+		log.Fatal(err)
+	}
+	s := int(sb.Int64())
+
+	keyring, err := ring.GenNewKeyRing(size, privkey, s)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tStart := time.Now()
+	sig, err := ring.Sign(msgHash, keyring, privkey, s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tEnd := time.Since(tStart)
+	fmt.Printf("It took %s to sign a ring with %d public keys\n", tEnd, size)
+
+	tStart = time.Now()
+	ring.Verify(sig)
+	tEnd = time.Since(tStart)
+	fmt.Printf("It took %s to verify a ring with %d public keys\n", tEnd, size)
+
 	os.Exit(0)
 }

@@ -35,5 +35,12 @@ $ go run . --link /path/to/signature1.sig /path/to/signature2.sig
 $ go run . --demo 100
 ```
 
+### Benchmark 1000 public keys
+```sh
+$ go run . --benchmark 1000
+It took 792.335683ms to sign a ring with 1000 public keys
+It took 788.610137ms to verify a ring with 1000 public keys
+```
+
 ## References
 This implementation is based on [ring-go](https://github.com/noot/ring-go) and the Monero paper [Ring Confidential Transactions](https://eprint.iacr.org/2015/1098.pdf)
