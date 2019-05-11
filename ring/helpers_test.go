@@ -18,23 +18,19 @@ func TestPadTo32Bytes(t *testing.T) {
 }
 
 func TestSerializeAndDeserialize(t *testing.T) {
-	/* generate new private public keypair */
 	privkey, err := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	/* sign message */
 	file, err := ioutil.ReadFile("../message.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
 	msgHash := sha3.Sum256(file)
 
-	/* secret index */
 	s := 7
 
-	/* generate keyring */
 	keyring, err := GenNewKeyRing(17, privkey, s)
 	if err != nil {
 		t.Fatal(err)
@@ -54,23 +50,23 @@ func TestSerializeAndDeserialize(t *testing.T) {
 		t.Fatal("incorrect signature length")
 	}
 
-	marshal_sig, err := Deserialize(byteSig)
+	marshalSig, err := Deserialize(byteSig)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	marshal_ok := reflect.DeepEqual(marshal_sig.S, sig.S) &&
-		reflect.DeepEqual(marshal_sig.Size, sig.Size) &&
-		reflect.DeepEqual(marshal_sig.C, sig.C) &&
-		reflect.DeepEqual(marshal_sig.M, sig.M) &&
-		reflect.DeepEqual(marshal_sig.I, sig.I)
+	marshalOk := reflect.DeepEqual(marshalSig.S, sig.S) &&
+		reflect.DeepEqual(marshalSig.Size, sig.Size) &&
+		reflect.DeepEqual(marshalSig.C, sig.C) &&
+		reflect.DeepEqual(marshalSig.M, sig.M) &&
+		reflect.DeepEqual(marshalSig.I, sig.I)
 
 	for i := 0; i < sig.Size; i++ {
-		marshal_ok = marshal_ok && reflect.DeepEqual(marshal_sig.Ring[i].X, sig.Ring[i].X)
-		marshal_ok = marshal_ok && reflect.DeepEqual(marshal_sig.Ring[i].Y, sig.Ring[i].Y)
+		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.Ring[i].X, sig.Ring[i].X)
+		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.Ring[i].Y, sig.Ring[i].Y)
 	}
 
-	if !marshal_ok {
+	if !marshalOk {
 		t.Fatal("did not marshal to correct sig")
 	}
 }
@@ -107,23 +103,23 @@ func TestSerializeAndDeserializeAgain(t *testing.T) {
 		t.Fatal("incorrect signature length")
 	}
 
-	marshal_sig, err := Deserialize(byteSig)
+	marshalSig, err := Deserialize(byteSig)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	marshal_ok := reflect.DeepEqual(marshal_sig.S, sig.S) &&
-		reflect.DeepEqual(marshal_sig.Size, sig.Size) &&
-		reflect.DeepEqual(marshal_sig.C, sig.C) &&
-		reflect.DeepEqual(marshal_sig.M, sig.M) &&
-		reflect.DeepEqual(marshal_sig.I, sig.I)
+	marshalOk := reflect.DeepEqual(marshalSig.S, sig.S) &&
+		reflect.DeepEqual(marshalSig.Size, sig.Size) &&
+		reflect.DeepEqual(marshalSig.C, sig.C) &&
+		reflect.DeepEqual(marshalSig.M, sig.M) &&
+		reflect.DeepEqual(marshalSig.I, sig.I)
 
 	for i := 0; i < sig.Size; i++ {
-		marshal_ok = marshal_ok && reflect.DeepEqual(marshal_sig.Ring[i].X, sig.Ring[i].X)
-		marshal_ok = marshal_ok && reflect.DeepEqual(marshal_sig.Ring[i].Y, sig.Ring[i].Y)
+		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.Ring[i].X, sig.Ring[i].X)
+		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.Ring[i].Y, sig.Ring[i].Y)
 	}
 
-	if !marshal_ok {
+	if !marshalOk {
 		t.Fatal("did not marshal to correct sig")
 	}
 }

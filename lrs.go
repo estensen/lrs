@@ -47,7 +47,6 @@ func main() {
 	}
 }
 
-
 // Generate a new public-private keypair and save in ./keystore directory
 func gen() {
 	priv, err := crypto.GenerateKey()
@@ -177,7 +176,6 @@ func sign() {
 		log.Fatal(err)
 	}
 
-	// read message and hash
 	fp, err = filepath.Abs(os.Args[4])
 	msgBytes, err := ioutil.ReadFile(fp)
 	if err != nil {
@@ -186,13 +184,11 @@ func sign() {
 
 	msgHash := sha3.Sum256(msgBytes)
 
-	// all good, let's sign
 	sig, err := ring.Sign(msgHash, r, priv, s)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// save signature
 	fmt.Println("signature successfully generated!")
 
 	fp, err = filepath.Abs("./signatures")
@@ -225,7 +221,6 @@ func verify() {
 		fmt.Println("need to supply path to signature: go run . --verify /path/to/signature.sig")
 		os.Exit(0)
 	}
-
 
 	fp, err := filepath.Abs(os.Args[2])
 	file, err := ioutil.ReadFile(fp)

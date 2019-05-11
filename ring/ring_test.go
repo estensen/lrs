@@ -11,14 +11,11 @@ import (
 )
 
 func createSig(size int, s int) *RingSign {
-	/* generate new private public keypair */
 	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 
-	/* sign message */
 	msg := "helloworld"
 	msgHash := sha3.Sum256([]byte(msg))
 
-	/* generate keyring */
 	keyring, err := GenNewKeyRing(size, privkey, s)
 	if err != nil {
 		return nil
@@ -32,10 +29,8 @@ func createSig(size int, s int) *RingSign {
 }
 
 func TestGenNewKeyRing(t *testing.T) {
-	/* generate new private public keypair */
 	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 
-	/* generate keyring */
 	keyring, err := GenNewKeyRing(2, privkey, 0)
 	if err != nil {
 		t.Error(err)
@@ -49,10 +44,8 @@ func TestGenNewKeyRing(t *testing.T) {
 }
 
 func TestGenNewKeyRing3(t *testing.T) {
-	/* generate new private public keypair */
 	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 
-	/* generate keyring */
 	keyring, err := GenNewKeyRing(3, privkey, 1)
 	if err != nil {
 		t.Error(err)
@@ -66,13 +59,11 @@ func TestGenNewKeyRing3(t *testing.T) {
 }
 
 func TestGenKeyRing(t *testing.T) {
-	/* generate new private public keypair */
 	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 
 	s := 0
 	size := 3
 
-	/* generate some pubkeys */
 	pubkeys := make([]*ecdsa.PublicKey, size)
 	for i := 0; i < size; i++ {
 		priv, err := crypto.GenerateKey()
@@ -84,7 +75,6 @@ func TestGenKeyRing(t *testing.T) {
 		pubkeys[i] = pub.(*ecdsa.PublicKey)
 	}
 
-	/* generate keyring */
 	keyring, err := GenKeyRing(pubkeys, privkey, s)
 	if err != nil {
 		t.Error(err)
@@ -122,14 +112,11 @@ func TestHashPoint(t *testing.T) {
 }
 
 func TestSign(t *testing.T) {
-	/* generate new private public keypair */
 	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 
-	/* sign message */
 	msg := "helloworld"
 	msgHash := sha3.Sum256([]byte(msg))
 
-	/* generate keyring */
 	keyring, err := GenNewKeyRing(2, privkey, 0)
 	if err != nil {
 		t.Error(err)
@@ -145,14 +132,11 @@ func TestSign(t *testing.T) {
 }
 
 func TestSignAgain(t *testing.T) {
-	/* generate new private public keypair */
 	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 
-	/* sign message */
 	msg := "helloworld"
 	msgHash := sha3.Sum256([]byte(msg))
 
-	/* generate keyring */
 	keyring, err := GenNewKeyRing(100, privkey, 17)
 	if err != nil {
 		t.Error(err)
@@ -172,7 +156,6 @@ func TestVerify(t *testing.T) {
 	if sig == nil {
 		t.Error("signing error")
 	}
-	/* verify signature */
 	ver := Verify(sig)
 	if !ver {
 		t.Error("verified? false")
@@ -186,7 +169,6 @@ func TestVerifyFalse(t *testing.T) {
 	}
 	curve := sig.Ring[0].Curve
 	sig.C, _ = rand.Int(rand.Reader, curve.Params().P)
-	/* verify signature */
 	ver := Verify(sig)
 	if ver {
 		t.Error("verified? true")
@@ -203,7 +185,6 @@ func TestVerifyWrongMessage(t *testing.T) {
 	msgHash := sha3.Sum256([]byte(msg))
 	sig.M = msgHash
 
-	/* verify signature */
 	ver := Verify(sig)
 	if ver {
 		t.Error("verified? true")
@@ -211,14 +192,11 @@ func TestVerifyWrongMessage(t *testing.T) {
 }
 
 func TestLinkabilityTrue(t *testing.T) {
-	/* generate new private public keypair */
 	privkey, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 
-	/* sign message */
 	msg1 := "helloworld"
 	msgHash1 := sha3.Sum256([]byte(msg1))
 
-	/* generate keyring */
 	keyring1, err := GenNewKeyRing(2, privkey, 0)
 	if err != nil {
 		t.Error(err)
@@ -229,15 +207,12 @@ func TestLinkabilityTrue(t *testing.T) {
 		t.Error("error when signing with ring size of 2")
 	} else {
 		t.Log("signing ok with ring size of 2")
-		t.Log(sig1)
 		spew.Dump(sig1.I)
 	}
 
-	/* sign message */
 	msg2 := "hello world"
 	msgHash2 := sha3.Sum256([]byte(msg2))
 
-	/* generate keyring */
 	keyring2, err := GenNewKeyRing(2, privkey, 0)
 	if err != nil {
 		t.Error(err)
@@ -248,7 +223,7 @@ func TestLinkabilityTrue(t *testing.T) {
 		t.Error("error when signing with ring size of 2")
 	} else {
 		t.Log("signing ok with ring size of 2")
-		t.Log(sig2)
+		spew.Dump(sig2.I)
 	}
 
 	link := Link(sig1, sig2)
@@ -260,14 +235,11 @@ func TestLinkabilityTrue(t *testing.T) {
 }
 
 func TestLinkabilityFalse(t *testing.T) {
-	/* generate new private public keypair */
 	privkey1, _ := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 
-	/* sign message */
 	msg1 := "helloworld"
 	msgHash1 := sha3.Sum256([]byte(msg1))
 
-	/* generate keyring */
 	keyring1, err := GenNewKeyRing(2, privkey1, 0)
 	if err != nil {
 		t.Error(err)
@@ -283,11 +255,9 @@ func TestLinkabilityFalse(t *testing.T) {
 	}
 
 	privkey2, _ := crypto.HexToECDSA("01ad23ee4fbabbcf31dda1270154a623f5f7c07433193ff07395b33ac5bf2bea")
-	/* sign message */
 	msg2 := "hello world"
 	msgHash2 := sha3.Sum256([]byte(msg2))
 
-	/* generate keyring */
 	keyring2, err := GenNewKeyRing(2, privkey2, 0)
 	if err != nil {
 		t.Error(err)
