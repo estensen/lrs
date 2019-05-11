@@ -20,7 +20,7 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// generate a new public-private keypair and save in ./keystore directory
+// Generate a new public-private keypair and save in ./keystore directory
 func gen() {
 	priv, err := crypto.GenerateKey()
 	if err != nil {
@@ -59,7 +59,7 @@ func gen() {
 }
 
 func sign() {
-	// read public keys and put them in a ring
+	// Read public keys and put them in a ring
 	fp, err := filepath.Abs(os.Args[2])
 	if err != nil {
 		log.Fatal("could not read key from ", os.Args[2], "\n", err)
@@ -108,7 +108,7 @@ func sign() {
 		pubkeys[i] = pub
 	}
 
-	// handle secret key and generate ring of pubkeys
+	// Handle secret key and generate ring of pubkeys
 	fp, err = filepath.Abs(os.Args[3])
 	privBytes, err := ioutil.ReadFile(fp)
 	if err != nil {
@@ -200,16 +200,52 @@ func verify() {
 	os.Exit(0)
 }
 
-func main() {
-	//fmt.Println("welcome to ring-go...")
+func linkable() {
+	fp1, err := filepath.Abs(os.Args[2])
+	file1, err := ioutil.ReadFile(fp1)
+	if err != nil {
+		log.Fatal("Could not read signature from ", fp1, "\n", err)
+	}
 
-	// cli options
+	fp2, err := filepath.Abs(os.Args[3])
+	file2, err := ioutil.ReadFile(fp2)
+	if err != nil {
+		log.Fatal("Could not read signature from ", fp2, "\n", err)
+	}
+
+	sigBytes1, err := hex.DecodeString(string(file1))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sigBytes2, err := hex.DecodeString(string(file2))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sig1, err := ring.Deserialize(sigBytes1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sig2, err := ring.Deserialize(sigBytes2)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	link := ring.Link(sig1, sig2)
+	fmt.Println("linkable?", link)
+	os.Exit(0)
+
+}
+
+func main() {
 	genPtr := flag.Bool("gen", false, "generate a new public-private keypair")
 	signPtr := flag.Bool("sign", false, "sign a message with a ring signature")
 	verifyPtr := flag.Bool("verify", false, "verify a ring signature")
+	linkablePtr := flag.Bool("linkable", false, "check if signatures are linkable")
 	demoPtr := flag.Bool("demo", false, "demo signing a message")
 
-	// if no flags passed, display help
 	if len(os.Args) < 2 {
 		flag.PrintDefaults()
 		os.Exit(0)
@@ -222,17 +258,17 @@ func main() {
 
 	if *signPtr {
 		if len(os.Args) < 2 {
-			fmt.Println("need to supply path to public key directory: ring-go --sign /path/to/pubkey/dir /path/to/privkey.priv message.txt")
+			fmt.Println("need to supply path to public key directory: go run . --sign /path/to/pubkey/dir /path/to/privkey.priv message.txt")
 			os.Exit(0)
 		}
 
 		if len(os.Args) < 3 {
-			fmt.Println("need to supply path to private key file: ring-go --sign /path/to/pubkey/dir /path/to/privkey.priv message.txt")
+			fmt.Println("need to supply path to private key file: go run . --sign /path/to/pubkey/dir /path/to/privkey.priv message.txt")
 			os.Exit(0)
 		}
 
 		if len(os.Args) < 4 {
-			fmt.Println("need to supply path to message file: ring-go --sign /path/to/pubkey/dir /path/to/privkey.priv message.txt")
+			fmt.Println("need to supply path to message file: go run . --sign /path/to/pubkey/dir /path/to/privkey.priv message.txt")
 			os.Exit(0)
 		}
 
@@ -241,11 +277,20 @@ func main() {
 
 	if *verifyPtr {
 		if len(os.Args) < 3 {
-			fmt.Println("need to supply path to signature: ring-go --verify /path/to/signature.sig")
+			fmt.Println("need to supply path to signature: go run . --verify /path/to/signature.sig")
 			os.Exit(0)
 		}
 
 		verify()
+	}
+
+	if *linkablePtr {
+		if len(os.Args) < 4 {
+			fmt.Println("need to supply path to signatures: go run . --linkable /path/to/signature1.sign /path/to/signature2.sign")
+			os.Exit(0)
+		}
+
+		linkable()
 	}
 
 	if *demoPtr {
@@ -254,39 +299,39 @@ func main() {
 			os.Exit(0)
 		}
 
-		// generate new private/public keypair
+		// Generate new private/public keypair
 		privkey, err := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// sign message
+		// Sign message
 		file, err := ioutil.ReadFile("./message.txt")
 		if err != nil {
 			log.Fatal("could not read message from message.txt", err)
 		}
 		msgHash := sha3.Sum256(file)
 
-		// get ring size from arguments
+		// Get ring size from arguments
 		size, err := strconv.Atoi(os.Args[2])
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// secret index
+		// Secret index
 		sb, err := rand.Int(rand.Reader, new(big.Int).SetInt64(int64(size)))
 		if err != nil {
 			log.Fatal(err)
 		}
 		s := int(sb.Int64())
 
-		// generate keyring
+		// Generate keyring
 		keyring, err := ring.GenNewKeyRing(size, privkey, s)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// sign
+		// Sign
 		sig, err := ring.Sign(msgHash, keyring, privkey, s)
 		if err != nil {
 			log.Fatal(err)
@@ -302,10 +347,9 @@ func main() {
 		fmt.Println("signature: ")
 		fmt.Println(fmt.Sprintf("0x%x", byteSig))
 
-		// verify signature
+		// Verify signature
 		ver := ring.Verify(sig)
 		fmt.Println("verified? ", ver)
 		os.Exit(0)
 	}
-
 }
