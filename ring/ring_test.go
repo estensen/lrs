@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	privkey *ecdsa.PrivateKey
+	privKey *ecdsa.PrivateKey
 	msgHash [32]byte
 )
 
 func TestGenerateKey(t *testing.T) {
 	var err error
-	privkey, err = crypto.GenerateKey()
+	privKey, err = crypto.GenerateKey()
 	if err != nil {
 		t.Error("Could not generate key-pair")
 	}
@@ -29,12 +29,12 @@ func TestCreateMsgHash(t *testing.T) {
 }
 
 func createSig(size int, s int) *RingSign {
-	keyring, err := GenNewKeyRing(size, privkey, s)
+	keyring, err := GenNewKeyRing(size, privKey, s)
 	if err != nil {
 		return nil
 	}
 
-	sig, err := Sign(msgHash, keyring, privkey, s)
+	sig, err := Sign(msgHash, keyring, privKey, s)
 	if err != nil {
 		return nil
 	}
@@ -42,7 +42,7 @@ func createSig(size int, s int) *RingSign {
 }
 
 func TestGenNewKeyRing(t *testing.T) {
-	keyring, err := GenNewKeyRing(2, privkey, 0)
+	keyring, err := GenNewKeyRing(2, privKey, 0)
 	if err != nil {
 		t.Error(err)
 	}
@@ -55,7 +55,7 @@ func TestGenNewKeyRing(t *testing.T) {
 }
 
 func TestGenNewKeyRing3(t *testing.T) {
-	keyring, err := GenNewKeyRing(3, privkey, 1)
+	keyring, err := GenNewKeyRing(3, privKey, 1)
 	if err != nil {
 		t.Error(err)
 	}
@@ -71,25 +71,25 @@ func TestGenKeyRing(t *testing.T) {
 	s := 0
 	size := 3
 
-	pubkeys := make([]*ecdsa.PublicKey, size)
+	pubKeys := make([]*ecdsa.PublicKey, size)
 	for i := 0; i < size; i++ {
-		priv, err := crypto.GenerateKey()
+		privKey, err := crypto.GenerateKey()
 		if err != nil {
 			t.Error(err)
 		}
 
-		pub := priv.Public()
-		pubkeys[i] = pub.(*ecdsa.PublicKey)
+		pub := privKey.Public()
+		pubKeys[i] = pub.(*ecdsa.PublicKey)
 	}
 
-	keyring, err := GenKeyRing(pubkeys, privkey, s)
+	keyring, err := GenKeyRing(pubKeys, privKey, s)
 	if err != nil {
 		t.Error(err)
 	}
 
 	if len(keyring) != size+1 {
 		t.Error("could not generate keyring of size 4")
-	} else if keyring[s].X.Cmp(privkey.Public().(*ecdsa.PublicKey).X) != 0 {
+	} else if keyring[s].X.Cmp(privKey.Public().(*ecdsa.PublicKey).X) != 0 {
 		t.Error("secret index in ring is not signer")
 	} else {
 		t.Log("generation of new keyring of size 4 ok")
@@ -97,7 +97,7 @@ func TestGenKeyRing(t *testing.T) {
 }
 
 func TestGenKeyImage(t *testing.T) {
-	image := GenKeyImage(privkey)
+	image := GenKeyImage(privKey)
 
 	if image == nil {
 		t.Error("could not generate key image")
@@ -117,12 +117,12 @@ func TestHashPoint(t *testing.T) {
 }
 
 func TestSign(t *testing.T) {
-	keyring, err := GenNewKeyRing(2, privkey, 0)
+	keyring, err := GenNewKeyRing(2, privKey, 0)
 	if err != nil {
 		t.Error(err)
 	}
 
-	sig, err := Sign(msgHash, keyring, privkey, 0)
+	sig, err := Sign(msgHash, keyring, privKey, 0)
 	if err != nil {
 		t.Error("error when signing with ring size of 2")
 	} else {
@@ -132,12 +132,12 @@ func TestSign(t *testing.T) {
 }
 
 func TestSignAgain(t *testing.T) {
-	keyring, err := GenNewKeyRing(100, privkey, 17)
+	keyring, err := GenNewKeyRing(100, privKey, 17)
 	if err != nil {
 		t.Error(err)
 	}
 
-	sig, err := Sign(msgHash, keyring, privkey, 17)
+	sig, err := Sign(msgHash, keyring, privKey, 17)
 	if err != nil {
 		t.Error("error when signing with ring size of 100")
 	} else {
@@ -187,12 +187,12 @@ func TestVerifyWrongMessage(t *testing.T) {
 }
 
 func TestLinkabilityTrue(t *testing.T) {
-	keyring1, err := GenNewKeyRing(2, privkey, 0)
+	keyring1, err := GenNewKeyRing(2, privKey, 0)
 	if err != nil {
 		t.Error(err)
 	}
 
-	sig1, err := Sign(msgHash, keyring1, privkey, 0)
+	sig1, err := Sign(msgHash, keyring1, privKey, 0)
 	if err != nil {
 		t.Error("error when signing with ring size of 2")
 	} else {
@@ -203,12 +203,12 @@ func TestLinkabilityTrue(t *testing.T) {
 	msg2 := "hello world"
 	msgHash2 := sha3.Sum256([]byte(msg2))
 
-	keyring2, err := GenNewKeyRing(2, privkey, 0)
+	keyring2, err := GenNewKeyRing(2, privKey, 0)
 	if err != nil {
 		t.Error(err)
 	}
 
-	sig2, err := Sign(msgHash2, keyring2, privkey, 0)
+	sig2, err := Sign(msgHash2, keyring2, privKey, 0)
 	if err != nil {
 		t.Error("error when signing with ring size of 2")
 	} else {
@@ -225,12 +225,12 @@ func TestLinkabilityTrue(t *testing.T) {
 }
 
 func TestLinkabilityFalse(t *testing.T) {
-	keyring1, err := GenNewKeyRing(2, privkey, 0)
+	keyring1, err := GenNewKeyRing(2, privKey, 0)
 	if err != nil {
 		t.Error(err)
 	}
 
-	sig1, err := Sign(msgHash, keyring1, privkey, 0)
+	sig1, err := Sign(msgHash, keyring1, privKey, 0)
 	if err != nil {
 		t.Error("error when signing with ring size of 2")
 	} else {
@@ -239,19 +239,19 @@ func TestLinkabilityFalse(t *testing.T) {
 		spew.Dump(sig1.I)
 	}
 
-	privkey2, err := crypto.GenerateKey()
+	privKey2, err := crypto.GenerateKey()
 	if err != nil {
 		t.Error("Could not generate key-pair")
 	}
 	msg2 := "hello world"
 	msgHash2 := sha3.Sum256([]byte(msg2))
 
-	keyring2, err := GenNewKeyRing(2, privkey2, 0)
+	keyring2, err := GenNewKeyRing(2, privKey2, 0)
 	if err != nil {
 		t.Error(err)
 	}
 
-	sig2, err := Sign(msgHash2, keyring2, privkey2, 0)
+	sig2, err := Sign(msgHash2, keyring2, privKey2, 0)
 	if err != nil {
 		t.Error("error when signing with ring size of 2")
 	} else {

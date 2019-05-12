@@ -85,6 +85,7 @@ func gen() {
 }
 
 func sign() {
+	// TODO: Use Sign from ring.go
 	if len(os.Args) < 2 {
 		fmt.Println("need to supply path to public key directory: go run . --sign /path/to/pubkey/dir /path/to/privkey.priv message.txt")
 		os.Exit(0)
@@ -287,6 +288,7 @@ func linkable() {
 }
 
 func benchmark() {
+	// TODO: Use testing.Benchmark
 	if len(os.Args) < 3 {
 		fmt.Println("need to supply size of ring: go run . --benchmark 17")
 		os.Exit(0)

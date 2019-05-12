@@ -18,7 +18,7 @@ func TestPadTo32Bytes(t *testing.T) {
 }
 
 func TestSerializeAndDeserialize(t *testing.T) {
-	privkey, err := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
+	privKey, err := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,12 +31,12 @@ func TestSerializeAndDeserialize(t *testing.T) {
 
 	s := 7
 
-	keyring, err := GenNewKeyRing(17, privkey, s)
+	keyring, err := GenNewKeyRing(17, privKey, s)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	sig, err := Sign(msgHash, keyring, privkey, s)
+	sig, err := Sign(msgHash, keyring, privKey, s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestSerializeAndDeserialize(t *testing.T) {
 }
 
 func TestSerializeAndDeserializeAgain(t *testing.T) {
-	privkey, err := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
+	privKey, err := crypto.HexToECDSA("358be44145ad16a1add8622786bef07e0b00391e072855a5667eb3c78b9d3803")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,12 +84,12 @@ func TestSerializeAndDeserializeAgain(t *testing.T) {
 	msgHash := sha3.Sum256(file)
 
 	s := 9
-	keyring, err := GenNewKeyRing(100, privkey, s)
+	keyring, err := GenNewKeyRing(100, privKey, s)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	sig, err := Sign(msgHash, keyring, privkey, s)
+	sig, err := Sign(msgHash, keyring, privKey, s)
 	if err != nil {
 		t.Fatal(err)
 	}
