@@ -47,7 +47,7 @@ func TestGenNewKeyRing(t *testing.T) {
 		t.Error(err)
 	}
 
-	if keyring == nil || len(keyring) != 2 {
+	if len(keyring) != 2 {
 		t.Error("could not generate keyring of size 2")
 	} else {
 		t.Log("generation of new keyring of size 2 ok")
@@ -60,7 +60,7 @@ func TestGenNewKeyRing3(t *testing.T) {
 		t.Error(err)
 	}
 
-	if keyring == nil || len(keyring) != 3 {
+	if len(keyring) != 3 {
 		t.Error("could not generate keyring of size 3")
 	} else {
 		t.Log("generation of new keyring of size 3 ok")
@@ -87,7 +87,7 @@ func TestGenKeyRing(t *testing.T) {
 		t.Error(err)
 	}
 
-	if keyring == nil || len(keyring) != size+1 {
+	if len(keyring) != size+1 {
 		t.Error("could not generate keyring of size 4")
 	} else if keyring[s].X.Cmp(privkey.Public().(*ecdsa.PublicKey).X) != 0 {
 		t.Error("secret index in ring is not signer")
@@ -110,8 +110,8 @@ func TestHashPoint(t *testing.T) {
 		t.Error(err)
 	}
 
-	h_x, h_y := HashPoint(p.Public().(*ecdsa.PublicKey))
-	if h_x == nil || h_y == nil {
+	hx, hy := HashPoint(p.Public().(*ecdsa.PublicKey))
+	if hx == nil || hy == nil {
 		t.Error("did not hash point")
 	}
 }
