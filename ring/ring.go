@@ -26,11 +26,6 @@ type RingSign struct {
 	Curve elliptic.Curve
 }
 
-// helper function, returns type of v
-func typeof(v interface{}) string {
-	return fmt.Sprintf("%T", v)
-}
-
 // bytes returns the public key ring as a byte slice.
 func (r Ring) Bytes() (b []byte) {
 	for _, pub := range r {
