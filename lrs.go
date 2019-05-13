@@ -17,7 +17,7 @@ import (
 	"github.com/estensen/linkable-ring-signatures/ring"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"golang.org/x/crypto/sha3"
+	"golang.org/x/crypto/blake2b"
 )
 
 func main() {
@@ -183,7 +183,7 @@ func sign() {
 		log.Fatal("could not read key from ", fp, "\n", err)
 	}
 
-	msgHash := sha3.Sum256(msgBytes)
+	msgHash := blake2b.Sum256(msgBytes)
 
 	sig, err := ring.Sign(msgHash, r, priv, s)
 	if err != nil {
@@ -303,7 +303,7 @@ func benchmark() {
 	if err != nil {
 		log.Fatal("could not read message from message.txt", err)
 	}
-	msgHash := sha3.Sum256(file)
+	msgHash := blake2b.Sum256(file)
 
 	size, err := strconv.Atoi(os.Args[2])
 	if err != nil {

@@ -7,7 +7,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/crypto"
-	"golang.org/x/crypto/sha3"
+	"golang.org/x/crypto/blake2b"
 )
 
 var (
@@ -25,7 +25,7 @@ func TestGenerateKey(t *testing.T) {
 
 func TestCreateMsgHash(t *testing.T) {
 	msg := "helloworld"
-	msgHash = sha3.Sum256([]byte(msg))
+	msgHash = blake2b.Sum256([]byte(msg))
 }
 
 func createSig(size int, s int) *RingSign {
@@ -177,7 +177,7 @@ func TestVerifyWrongMessage(t *testing.T) {
 	}
 
 	msg := "hello"
-	msgHash := sha3.Sum256([]byte(msg))
+	msgHash := blake2b.Sum256([]byte(msg))
 	sig.M = msgHash
 
 	ver := Verify(sig)
@@ -201,7 +201,7 @@ func TestLinkabilityTrue(t *testing.T) {
 	}
 
 	msg2 := "hello world"
-	msgHash2 := sha3.Sum256([]byte(msg2))
+	msgHash2 := blake2b.Sum256([]byte(msg2))
 
 	keyring2, err := GenNewKeyRing(2, privKey, 0)
 	if err != nil {
@@ -244,7 +244,7 @@ func TestLinkabilityFalse(t *testing.T) {
 		t.Error("Could not generate key-pair")
 	}
 	msg2 := "hello world"
-	msgHash2 := sha3.Sum256([]byte(msg2))
+	msgHash2 := blake2b.Sum256([]byte(msg2))
 
 	keyring2, err := GenNewKeyRing(2, privKey2, 0)
 	if err != nil {

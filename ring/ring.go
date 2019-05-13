@@ -11,7 +11,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"golang.org/x/crypto/sha3"
+	"golang.org/x/crypto/blake2b"
 )
 
 type Ring []*ecdsa.PublicKey
@@ -67,7 +67,7 @@ func (r *RingSign) Serialize() ([]byte, error) {
 	sig = append(sig, PadTo32Bytes(r.I.Y.Bytes())...)
 
 	if len(sig) != 32*(3*r.Size+4)+8 {
-		return []byte{}, errors.New("Could not serialize ring signature")
+		return []byte{}, errors.New("could not serialize ring signature")
 	}
 
 	return sig, nil
@@ -172,15 +172,15 @@ func GenNewKeyRing(size int, privKey *ecdsa.PrivateKey, s int) ([]*ecdsa.PublicK
 }
 
 // GenKeyImage calculates key image I = x * H_p(P) where H_p is a hash function that returns a point
-// H_p(P) = sha3(P) * G
+// H_p(P) = blake2b(P) * G
 func GenKeyImage(privKey *ecdsa.PrivateKey) *ecdsa.PublicKey {
 	pubKey := privKey.Public().(*ecdsa.PublicKey)
 	image := new(ecdsa.PublicKey)
 
-	// calculate sha3(P)
+	// blake2b(P)
 	hx, hy := HashPoint(pubKey)
 
-	// calculate H_p(P) = x * sha3(P) * G
+	// H_p(P) = x * blake2b(P) * G
 	ix, iy := privKey.Curve.ScalarMult(hx, hy, privKey.D.Bytes())
 
 	image.X = ix
@@ -190,11 +190,11 @@ func GenKeyImage(privKey *ecdsa.PrivateKey) *ecdsa.PublicKey {
 
 // HashPoint returns point on the curve
 func HashPoint(p *ecdsa.PublicKey) (hx, hy *big.Int) {
-	hash := sha3.Sum256(append(p.X.Bytes(), p.Y.Bytes()...))
+	hash := blake2b.Sum256(append(p.X.Bytes(), p.Y.Bytes()...))
 	return p.Curve.ScalarBaseMult(hash[:]) // g^H'()
 }
 
-// create ring signature from list of public keys given inputs:
+// Sign creates a ring signature from list of public keys given inputs:
 // msg: byte array, message to be signed
 // ring: array of *ecdsa.PublicKeys to be included in the ring
 // privKey: *ecdsa.PrivateKey of signer
@@ -237,9 +237,9 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 	}
 
 	// start at secret index s
-	// compute L_s = u*G
+	// L_s = u*G
 	lx, ly := curve.ScalarBaseMult(u.Bytes())
-	// compute R_s = u*H_p(P[s])
+	// R_s = u*H_p(P[s])
 	hx, hy := HashPoint(pubKey)
 	rx, ry := curve.ScalarMult(hx, hy, u.Bytes())
 
@@ -247,7 +247,7 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 	r := append(rx.Bytes(), ry.Bytes()...)
 
 	// concatenate m and u*G and calculate c[s+1] = H(m, L_s, R_s)
-	Ci := sha3.Sum256(append(m[:], append(l, r...)...))
+	Ci := blake2b.Sum256(append(m[:], append(l, r...)...))
 	idx := (s + 1) % ringSize
 	C[idx] = new(big.Int).SetBytes(Ci[:])
 
@@ -269,21 +269,21 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 			return nil, errors.New(fmt.Sprintf("No public key at index %d", idx))
 		}
 
-		// calculate L_i = si*G + Ci*P_i
+		// L_i = si*G + Ci*P_i
 		px, py := curve.ScalarMult(ring[idx].X, ring[idx].Y, C[idx].Bytes()) // px, py = Ci*P_i
 		sx, sy := curve.ScalarBaseMult(si.Bytes())                           // sx, sy = s[n-1]*G
 		lx, ly := curve.Add(sx, sy, px, py)
 
-		// calculate R_i = si*H_p(P_i) + Ci*I
+		// R_i = si*H_p(P_i) + Ci*I
 		px, py = curve.ScalarMult(image.X, image.Y, C[idx].Bytes()) // px, py = Ci*I
 		hx, hy := HashPoint(ring[idx])
 		sx, sy = curve.ScalarMult(hx, hy, si.Bytes()) // sx, sy = s[n-1]*H_p(P_i)
 		rx, ry := curve.Add(sx, sy, px, py)
 
-		// calculate c[i+1] = H(m, L_i, R_i)
+		// c[i+1] = H(m, L_i, R_i)
 		l := append(lx.Bytes(), ly.Bytes()...)
 		r := append(rx.Bytes(), ry.Bytes()...)
-		Ci = sha3.Sum256(append(m[:], append(l, r...)...))
+		Ci = blake2b.Sum256(append(m[:], append(l, r...)...))
 
 		if i == ringSize-1 {
 			C[s] = new(big.Int).SetBytes(Ci[:])
@@ -312,9 +312,10 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 	r = append(rx.Bytes(), ry.Bytes()...)
 
 	// check that H(m, L[s], R[s]) == C[s+1]
-	Ci = sha3.Sum256(append(m[:], append(l, r...)...))
+	Ci = blake2b.Sum256(append(m[:], append(l, r...)...))
 
-	if !bytes.Equal(ux.Bytes(), lx.Bytes()) || !bytes.Equal(uy.Bytes(), ly.Bytes()) || !bytes.Equal(tx.Bytes(), rx.Bytes()) || !bytes.Equal(ty.Bytes(), ry.Bytes()) { //|| !bytes.Equal(C[(s+1)%ringSize].Bytes(), Ci[:]) {
+	if !bytes.Equal(ux.Bytes(), lx.Bytes()) || !bytes.Equal(uy.Bytes(), ly.Bytes()) || !bytes.Equal(tx.Bytes(), rx.Bytes()) || !bytes.Equal(ty.Bytes(), ry.Bytes()) {
+		//|| !bytes.Equal(C[(s+1)%ringSize].Bytes(), Ci[:]) {
 		return nil, errors.New("error closing ring")
 	}
 
@@ -325,7 +326,7 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 	return sig, nil
 }
 
-// verify ring signature contained in RingSign struct
+// Verify checks the validity of the ring signature contained in RingSign struct
 // returns true if a valid signature, false otherwise
 func Verify(sig *RingSign) bool {
 	// setup
@@ -337,24 +338,23 @@ func Verify(sig *RingSign) bool {
 	curve := sig.Curve
 	image := sig.I
 
-	// calculate c[i+1] = H(m, s[i]*G + c[i]*P[i])
-	// and c[0] = H)(m, s[n-1]*G + c[n-1]*P[n-1]) where n is the ring size
+	// c[i+1] = H(m, s[i]*G + c[i]*P[i]) and c[0] = H)(m, s[n-1]*G + c[n-1]*P[n-1]) where n is the ring size
 	for i := 0; i < ringSize; i++ {
 		// calculate L_i = si*G + Ci*P_i
 		px, py := curve.ScalarMult(ring[i].X, ring[i].Y, C[i].Bytes()) // px, py = Ci*P_i
 		sx, sy := curve.ScalarBaseMult(S[i].Bytes())                   // sx, sy = s[i]*G
 		lx, ly := curve.Add(sx, sy, px, py)
 
-		// calculate R_i = si*H_p(P_i) + Ci*I
+		// R_i = si*H_p(P_i) + Ci*I
 		px, py = curve.ScalarMult(image.X, image.Y, C[i].Bytes()) // px, py = c[i]*I
 		hx, hy := HashPoint(ring[i])
 		sx, sy = curve.ScalarMult(hx, hy, S[i].Bytes()) // sx, sy = s[i]*H_p(P[i])
 		rx, ry := curve.Add(sx, sy, px, py)
 
-		// calculate c[i+1] = H(m, L_i, R_i)
+		// c[i+1] = H(m, L_i, R_i)
 		l := append(lx.Bytes(), ly.Bytes()...)
 		r := append(rx.Bytes(), ry.Bytes()...)
-		Ci := sha3.Sum256(append(sig.M[:], append(l, r...)...))
+		Ci := blake2b.Sum256(append(sig.M[:], append(l, r...)...))
 
 		if i == ringSize-1 {
 			C[0] = new(big.Int).SetBytes(Ci[:])
@@ -366,6 +366,7 @@ func Verify(sig *RingSign) bool {
 	return bytes.Equal(sig.C.Bytes(), C[0].Bytes())
 }
 
+// Link compares two signatures to check if they are signed by the same private key
 func Link(sig1 *RingSign, sig2 *RingSign) bool {
 	return sig1.I.X.Cmp(sig2.I.X) == 0 && sig1.I.Y.Cmp(sig2.I.Y) == 0
 }
