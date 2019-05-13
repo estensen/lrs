@@ -1,4 +1,4 @@
-# linkable-ring-signatures
+# lrs
 Implementation of linkable ring signatures using elliptic curve cryptography in Go. This prototype is research code and should not be used with sensitive data. It definitely has bugs!
 
 ## Getting Started

@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/estensen/linkable-ring-signatures/ring"
+	"github.com/estensen/lrs/ring"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/crypto/blake2b"
