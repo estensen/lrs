@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/crypto/blake2b"
 )
@@ -197,7 +196,6 @@ func TestLinkabilityTrue(t *testing.T) {
 		t.Error("error when signing with ring size of 2")
 	} else {
 		t.Log("signing ok with ring size of 2")
-		spew.Dump(sig1.I)
 	}
 
 	msg2 := "hello world"
@@ -213,7 +211,6 @@ func TestLinkabilityTrue(t *testing.T) {
 		t.Error("error when signing with ring size of 2")
 	} else {
 		t.Log("signing ok with ring size of 2")
-		spew.Dump(sig2.I)
 	}
 
 	link := Link(sig1, sig2)
@@ -236,7 +233,6 @@ func TestLinkabilityFalse(t *testing.T) {
 	} else {
 		t.Log("signing ok with ring size of 2")
 		t.Log(sig1)
-		spew.Dump(sig1.I)
 	}
 
 	privKey2, err := crypto.GenerateKey()
