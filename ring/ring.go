@@ -171,7 +171,9 @@ func GenNewKeyRing(size int, privKey *ecdsa.PrivateKey, s int) ([]*ecdsa.PublicK
 	return ring, nil
 }
 
-// GenKeyImage calculates key image I = x * H_p(P) where H_p is a hash function that returns a point
+// GenKeyImage calculates key image
+// It is not possible to make a correlation between the public key and the corresponding key image
+// I = x * H_p(P) where H_p is a hash function that returns a point
 // H_p(P) = blake2b(P) * G
 func GenKeyImage(privKey *ecdsa.PrivateKey) *ecdsa.PublicKey {
 	pubKey := privKey.Public().(*ecdsa.PublicKey)
@@ -314,8 +316,7 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 	// check that H(m, L[s], R[s]) == C[s+1]
 	Ci = blake2b.Sum256(append(m[:], append(l, r...)...))
 
-	if !bytes.Equal(ux.Bytes(), lx.Bytes()) || !bytes.Equal(uy.Bytes(), ly.Bytes()) || !bytes.Equal(tx.Bytes(), rx.Bytes()) || !bytes.Equal(ty.Bytes(), ry.Bytes()) {
-		//|| !bytes.Equal(C[(s+1)%ringSize].Bytes(), Ci[:]) {
+	if !bytes.Equal(ux.Bytes(), lx.Bytes()) || !bytes.Equal(uy.Bytes(), ly.Bytes()) || !bytes.Equal(tx.Bytes(), rx.Bytes()) || !bytes.Equal(ty.Bytes(), ry.Bytes()) || !bytes.Equal(C[(s+1)%ringSize].Bytes(), Ci[:]) {
 		return nil, errors.New("error closing ring")
 	}
 
@@ -367,6 +368,7 @@ func Verify(sig *RingSign) bool {
 }
 
 // Link compares two signatures to check if they are signed by the same private key
+// Same key image implies double-spend
 func Link(sig1 *RingSign, sig2 *RingSign) bool {
 	return sig1.I.X.Cmp(sig2.I.X) == 0 && sig1.I.Y.Cmp(sig2.I.Y) == 0
 }
