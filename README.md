@@ -10,6 +10,11 @@ $ go get https://github.com/estensen/linkable-ring-signatures/...
 $ go install
 ```
 
+### Test
+```sh
+$ go test ./...
+```
+
 ### Create keys
 Before starting you have to generate the signers public and private keys and a folder with public keys. Create key pairs:
 ```sh
