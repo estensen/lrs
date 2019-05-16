@@ -87,22 +87,22 @@ func Deserialize(r []byte) (*RingSign, error) {
 	var mByte [32]byte
 	copy(mByte[:], m)
 
-	size_uint := binary.BigEndian.Uint64(size)
-	size_int := int(size_uint)
+	sizeUint := binary.BigEndian.Uint64(size)
+	sizeInt := int(sizeUint)
 
-	sig.Size = size_int
+	sig.Size = sizeInt
 	sig.M = mByte
 	sig.C = new(big.Int).SetBytes(r[40:72])
 
-	byteLen := size_int * 96
+	byteLen := sizeInt * 96
 
 	if len(r) < byteLen+136 {
 		return nil, errors.New("incorrect ring size")
 	}
 
 	j := 0
-	sig.S = make([]*big.Int, size_int)
-	sig.Ring = make([]*ecdsa.PublicKey, size_int)
+	sig.S = make([]*big.Int, sizeInt)
+	sig.Ring = make([]*ecdsa.PublicKey, sizeInt)
 
 	for i := 72; i < byteLen; i += 96 {
 		si := r[i : i+32]
