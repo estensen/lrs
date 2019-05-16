@@ -222,6 +222,9 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 	if ring[s] != pubKey {
 		return nil, errors.New("secret index in ring is not signer")
 	}
+	if curve == nil {
+		return nil, errors.New(fmt.Sprintf("No curve on ring"))
+	}
 
 	// generate key image
 	image := GenKeyImage(privKey)
@@ -264,9 +267,6 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 			return nil, err
 		}
 
-		if curve == nil {
-			return nil, errors.New(fmt.Sprintf("No curve at index %d", idx))
-		}
 		if ring[idx] == nil {
 			return nil, errors.New(fmt.Sprintf("No public key at index %d", idx))
 		}
