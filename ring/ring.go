@@ -196,9 +196,14 @@ func HashPoint(p *ecdsa.PublicKey) (hx, hy *big.Int) {
 	return p.Curve.ScalarBaseMult(hash[:]) // g^H'()
 }
 
+// Hash is a function that returns a value in Z_p (ed25519 base field)
+func Hash(m [32]byte, l, r []byte) [32]byte {
+	return blake2b.Sum256(append(m[:], append(l, r...)...))
+}
+
 // Sign creates a ring signature from list of public keys given inputs:
 // msg: byte array, message to be signed
-// ring: array of *ecdsa.PublicKeys to be included in the ring
+// L: array of *ecdsa.PublicKeys to be included in the ring
 // privKey: *ecdsa.PrivateKey of signer
 // s: index of signer in ring
 func Sign(m [32]byte, L []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int) (*RingSign, error) {
@@ -249,15 +254,11 @@ func Sign(m [32]byte, L []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int) (*
 	hx, hy := HashPoint(pubKey)
 	rx, ry := curve.ScalarMult(hx, hy, u.Bytes())
 
-	// Why do you need both l and r?
-	// Two different secrets?
-	// u is secret, encrypt it?
-
 	l := append(lx.Bytes(), ly.Bytes()...)
 	r := append(rx.Bytes(), ry.Bytes()...)
 
 	// concatenate m and u*G and calculate c[s+1] = H(m, L_s, R_s)
-	Ci := blake2b.Sum256(append(m[:], append(l, r...)...))
+	Ci := Hash(m, l, r)
 	idx := (s + 1) % ringSize
 	C[idx] = new(big.Int).SetBytes(Ci[:])
 
@@ -320,7 +321,7 @@ func Sign(m [32]byte, L []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int) (*
 	r = append(rx.Bytes(), ry.Bytes()...)
 
 	// check that H(m, L[s], R[s]) == C[s+1]
-	Ci = blake2b.Sum256(append(m[:], append(l, r...)...))
+	Ci = Hash(m, l, r)
 
 	if !bytes.Equal(ux.Bytes(), lx.Bytes()) || !bytes.Equal(uy.Bytes(), ly.Bytes()) || !bytes.Equal(tx.Bytes(), rx.Bytes()) || !bytes.Equal(ty.Bytes(), ry.Bytes()) || !bytes.Equal(C[(s+1)%ringSize].Bytes(), Ci[:]) {
 		return nil, errors.New("error closing ring")
@@ -337,15 +338,16 @@ func Sign(m [32]byte, L []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int) (*
 // returns true if a valid signature, false otherwise
 func Verify(sig *RingSign) bool {
 	// setup
-	L := sig.L
+	curve := sig.Curve
 	ringSize := sig.Size
-	S := sig.S
+	m := sig.M
+	L := sig.L
+	image := sig.I
 	C := make([]*big.Int, ringSize)
 	C[0] = sig.C
-	curve := sig.Curve
-	image := sig.I
+	S := sig.S
 
-	// c[i+1] = H(m, s[i]*G + c[i]*P[i]) and c[0] = H)(m, s[n-1]*G + c[n-1]*P[n-1]) where n is the ring size
+	// c[i+1] = H(m, s[i]*G + c[i]*P[i]) and c[0] = H(m, s[n-1]*G + c[n-1]*P[n-1]) where n is the ring size
 	for i := 0; i < ringSize; i++ {
 		// calculate L_i = si*G + Ci*P_i
 		px, py := curve.ScalarMult(L[i].X, L[i].Y, C[i].Bytes()) // px, py = Ci*P_i
@@ -361,7 +363,7 @@ func Verify(sig *RingSign) bool {
 		// c[i+1] = H(m, L_i, R_i)
 		l := append(lx.Bytes(), ly.Bytes()...)
 		r := append(rx.Bytes(), ry.Bytes()...)
-		Ci := blake2b.Sum256(append(sig.M[:], append(l, r...)...))
+		Ci := Hash(m, l, r)
 
 		if i == ringSize-1 {
 			C[0] = new(big.Int).SetBytes(Ci[:])

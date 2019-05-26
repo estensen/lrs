@@ -165,6 +165,7 @@ func sign() {
 
 	fmt.Printf("secret.pub:%x%x\n", priv.X, priv.Y)
 
+	// Create a random index for the signer
 	sb, err := rand.Int(rand.Reader, new(big.Int).SetInt64(int64(len(pubkeys))))
 	if err != nil {
 		log.Fatal(err)
