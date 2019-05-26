@@ -14,20 +14,20 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
-type Ring []*ecdsa.PublicKey
+type L []*ecdsa.PublicKey
 
 type RingSign struct {
 	Size  int              // size of ring
 	M     [32]byte         // message
 	C     *big.Int         // ring signature value
 	S     []*big.Int       // ring signature values
-	Ring  Ring             // array of public keys
+	L     L                // array of public keys
 	I     *ecdsa.PublicKey // key image
 	Curve elliptic.Curve
 }
 
 // Bytes returns the public key ring as a byte slice.
-func (r Ring) Bytes() (b []byte) {
+func (r L) Bytes() (b []byte) {
 	for _, pub := range r {
 		b = append(b, pub.X.Bytes()...)
 		b = append(b, pub.Y.Bytes()...)
@@ -58,8 +58,8 @@ func (r *RingSign) Serialize() ([]byte, error) {
 	// 96 bytes each iteration
 	for i := 0; i < r.Size; i++ {
 		sig = append(sig, PadTo32Bytes(r.S[i].Bytes())...)
-		sig = append(sig, PadTo32Bytes(r.Ring[i].X.Bytes())...)
-		sig = append(sig, PadTo32Bytes(r.Ring[i].Y.Bytes())...)
+		sig = append(sig, PadTo32Bytes(r.L[i].X.Bytes())...)
+		sig = append(sig, PadTo32Bytes(r.L[i].Y.Bytes())...)
 	}
 
 	// 64 bytes
@@ -102,7 +102,7 @@ func Deserialize(r []byte) (*RingSign, error) {
 
 	j := 0
 	sig.S = make([]*big.Int, sizeInt)
-	sig.Ring = make([]*ecdsa.PublicKey, sizeInt)
+	sig.L = make([]*ecdsa.PublicKey, sizeInt)
 
 	for i := 72; i < byteLen; i += 96 {
 		si := r[i : i+32]
@@ -110,10 +110,10 @@ func Deserialize(r []byte) (*RingSign, error) {
 		yi := r[i+64 : i+96]
 
 		sig.S[j] = new(big.Int).SetBytes(si)
-		sig.Ring[j] = new(ecdsa.PublicKey)
-		sig.Ring[j].X = new(big.Int).SetBytes(xi)
-		sig.Ring[j].Y = new(big.Int).SetBytes(yi)
-		sig.Ring[j].Curve = crypto.S256()
+		sig.L[j] = new(ecdsa.PublicKey)
+		sig.L[j].X = new(big.Int).SetBytes(xi)
+		sig.L[j].Y = new(big.Int).SetBytes(yi)
+		sig.L[j].Curve = crypto.S256()
 		j++
 	}
 
@@ -201,8 +201,8 @@ func HashPoint(p *ecdsa.PublicKey) (hx, hy *big.Int) {
 // ring: array of *ecdsa.PublicKeys to be included in the ring
 // privKey: *ecdsa.PrivateKey of signer
 // s: index of signer in ring
-func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int) (*RingSign, error) {
-	ringSize := len(ring)
+func Sign(m [32]byte, L []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int) (*RingSign, error) {
+	ringSize := len(L)
 	if ringSize < 2 {
 		return nil, errors.New("size of ring less than two")
 	} else if s >= ringSize || s < 0 {
@@ -215,11 +215,11 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 	sig := new(RingSign)
 	sig.Size = ringSize
 	sig.M = m
-	sig.Ring = ring
+	sig.L = L
 	sig.Curve = curve
 
 	// check that key at index s is indeed the signer
-	if ring[s] != pubKey {
+	if L[s] != pubKey {
 		return nil, errors.New("secret index in ring is not signer")
 	}
 	if curve == nil {
@@ -241,12 +241,17 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 		return nil, err
 	}
 
+	// Add for signer
 	// start at secret index s
 	// L_s = u*G
 	lx, ly := curve.ScalarBaseMult(u.Bytes())
 	// R_s = u*H_p(P[s])
 	hx, hy := HashPoint(pubKey)
 	rx, ry := curve.ScalarMult(hx, hy, u.Bytes())
+
+	// Why do you need both l and r?
+	// Two different secrets?
+	// u is secret, encrypt it?
 
 	l := append(lx.Bytes(), ly.Bytes()...)
 	r := append(rx.Bytes(), ry.Bytes()...)
@@ -256,6 +261,7 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 	idx := (s + 1) % ringSize
 	C[idx] = new(big.Int).SetBytes(Ci[:])
 
+	// Add for everyone else
 	// start loop at s+1
 	for i := 1; i < ringSize; i++ {
 		idx := (s + i) % ringSize
@@ -267,18 +273,18 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 			return nil, err
 		}
 
-		if ring[idx] == nil {
+		if L[idx] == nil {
 			return nil, errors.New(fmt.Sprintf("No public key at index %d", idx))
 		}
 
 		// L_i = si*G + Ci*P_i
-		px, py := curve.ScalarMult(ring[idx].X, ring[idx].Y, C[idx].Bytes()) // px, py = Ci*P_i
-		sx, sy := curve.ScalarBaseMult(si.Bytes())                           // sx, sy = s[n-1]*G
+		px, py := curve.ScalarMult(L[idx].X, L[idx].Y, C[idx].Bytes()) // px, py = Ci*P_i
+		sx, sy := curve.ScalarBaseMult(si.Bytes())                     // sx, sy = s[n-1]*G
 		lx, ly := curve.Add(sx, sy, px, py)
 
 		// R_i = si*H_p(P_i) + Ci*I
 		px, py = curve.ScalarMult(image.X, image.Y, C[idx].Bytes()) // px, py = Ci*I
-		hx, hy := HashPoint(ring[idx])
+		hx, hy := HashPoint(L[idx])
 		sx, sy = curve.ScalarMult(hx, hy, si.Bytes()) // sx, sy = s[n-1]*H_p(P_i)
 		rx, ry := curve.Add(sx, sy, px, py)
 
@@ -299,13 +305,13 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 
 	// check that u*G = S[s]*G + c[s]*P[s]
 	ux, uy := curve.ScalarBaseMult(u.Bytes()) // u*G
-	px, py := curve.ScalarMult(ring[s].X, ring[s].Y, C[s].Bytes())
+	px, py := curve.ScalarMult(L[s].X, L[s].Y, C[s].Bytes())
 	sx, sy := curve.ScalarBaseMult(S[s].Bytes())
 	lx, ly = curve.Add(sx, sy, px, py)
 
 	// check that u*H_p(P[s]) = S[s]*H_p(P[s]) + C[s]*I
 	px, py = curve.ScalarMult(image.X, image.Y, C[s].Bytes()) // px, py = C[s]*I
-	hx, hy = HashPoint(ring[s])
+	hx, hy = HashPoint(L[s])
 	tx, ty := curve.ScalarMult(hx, hy, u.Bytes())
 	sx, sy = curve.ScalarMult(hx, hy, S[s].Bytes()) // sx, sy = S[s]*H_p(P[s])
 	rx, ry = curve.Add(sx, sy, px, py)
@@ -331,7 +337,7 @@ func Sign(m [32]byte, ring []*ecdsa.PublicKey, privKey *ecdsa.PrivateKey, s int)
 // returns true if a valid signature, false otherwise
 func Verify(sig *RingSign) bool {
 	// setup
-	ring := sig.Ring
+	L := sig.L
 	ringSize := sig.Size
 	S := sig.S
 	C := make([]*big.Int, ringSize)
@@ -342,13 +348,13 @@ func Verify(sig *RingSign) bool {
 	// c[i+1] = H(m, s[i]*G + c[i]*P[i]) and c[0] = H)(m, s[n-1]*G + c[n-1]*P[n-1]) where n is the ring size
 	for i := 0; i < ringSize; i++ {
 		// calculate L_i = si*G + Ci*P_i
-		px, py := curve.ScalarMult(ring[i].X, ring[i].Y, C[i].Bytes()) // px, py = Ci*P_i
-		sx, sy := curve.ScalarBaseMult(S[i].Bytes())                   // sx, sy = s[i]*G
+		px, py := curve.ScalarMult(L[i].X, L[i].Y, C[i].Bytes()) // px, py = Ci*P_i
+		sx, sy := curve.ScalarBaseMult(S[i].Bytes())             // sx, sy = s[i]*G
 		lx, ly := curve.Add(sx, sy, px, py)
 
 		// R_i = si*H_p(P_i) + Ci*I
 		px, py = curve.ScalarMult(image.X, image.Y, C[i].Bytes()) // px, py = c[i]*I
-		hx, hy := HashPoint(ring[i])
+		hx, hy := HashPoint(L[i])
 		sx, sy = curve.ScalarMult(hx, hy, S[i].Bytes()) // sx, sy = s[i]*H_p(P[i])
 		rx, ry := curve.Add(sx, sy, px, py)
 

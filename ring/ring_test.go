@@ -161,7 +161,7 @@ func TestVerifyFalse(t *testing.T) {
 	if sig == nil {
 		t.Error("signing error")
 	}
-	curve := sig.Ring[0].Curve
+	curve := sig.L[0].Curve
 	sig.C, _ = rand.Int(rand.Reader, curve.Params().P)
 	ver := Verify(sig)
 	if ver {

@@ -85,7 +85,6 @@ func gen() {
 }
 
 func sign() {
-	// TODO: Use Sign from ring.go
 	if len(os.Args) < 2 {
 		fmt.Println("need to supply path to public key directory: go run . --sign /path/to/pubkey/dir /path/to/privkey.priv message.txt")
 		os.Exit(0)

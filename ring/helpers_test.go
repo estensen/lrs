@@ -62,8 +62,8 @@ func TestSerializeAndDeserialize(t *testing.T) {
 		reflect.DeepEqual(marshalSig.I, sig.I)
 
 	for i := 0; i < sig.Size; i++ {
-		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.Ring[i].X, sig.Ring[i].X)
-		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.Ring[i].Y, sig.Ring[i].Y)
+		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.L[i].X, sig.L[i].X)
+		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.L[i].Y, sig.L[i].Y)
 	}
 
 	if !marshalOk {
@@ -115,8 +115,8 @@ func TestSerializeAndDeserializeAgain(t *testing.T) {
 		reflect.DeepEqual(marshalSig.I, sig.I)
 
 	for i := 0; i < sig.Size; i++ {
-		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.Ring[i].X, sig.Ring[i].X)
-		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.Ring[i].Y, sig.Ring[i].Y)
+		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.L[i].X, sig.L[i].X)
+		marshalOk = marshalOk && reflect.DeepEqual(marshalSig.L[i].Y, sig.L[i].Y)
 	}
 
 	if !marshalOk {
