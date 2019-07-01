@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -290,49 +291,143 @@ func linkable() {
 func benchmark() {
 	// TODO: Use testing.Benchmark
 	if len(os.Args) < 3 {
-		fmt.Println("need to supply size of ring: go run . --benchmark 17")
+		fmt.Println("need to supply size of ring: go run . --benchmark 10")
 		os.Exit(0)
 	}
 
-	privkey, err := crypto.GenerateKey()
-	if err != nil {
-		log.Fatal("Could not generate key-pair", err)
+	fmt.Println("Linked ring signature:")
+
+	var timesSign []float64
+	var timesVerify []float64
+	var numRuns int
+
+	for i := 0; i < 10; i++ {
+
+		privkey, err := crypto.GenerateKey()
+		if err != nil {
+			log.Fatal("Could not generate key-pair", err)
+		}
+
+		file, err := ioutil.ReadFile("./message.txt")
+		if err != nil {
+			log.Fatal("could not read message from message.txt", err)
+		}
+		msgHash := blake2b.Sum256(file)
+
+		size, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		sb, err := rand.Int(rand.Reader, new(big.Int).SetInt64(int64(size)))
+		if err != nil {
+			log.Fatal(err)
+		}
+		s := int(sb.Int64())
+
+		keyring, err := ring.GenNewKeyRing(size, privkey, s)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tStart := time.Now()
+		sig, err := ring.Sign(msgHash, keyring, privkey, s)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tEnd := time.Since(tStart)
+		fmt.Printf("It took %s to sign a ring with %d public keys\n", tEnd, size)
+		timesSign = append(timesSign, tEnd.Seconds())
+
+		tStart = time.Now()
+		ring.Verify(sig)
+		tEnd = time.Since(tStart)
+		fmt.Printf("It took %s to verify a ring with %d public keys\n", tEnd, size)
+		timesVerify = append(timesVerify, tEnd.Seconds())
+
+		numRuns += 1
 	}
 
-	file, err := ioutil.ReadFile("./message.txt")
-	if err != nil {
-		log.Fatal("could not read message from message.txt", err)
+	var meanSign float64
+	for _, v := range timesSign {
+		meanSign += v
 	}
-	msgHash := blake2b.Sum256(file)
+	meanSign /= float64(numRuns)
+	stdDevSign := stdDev(timesSign, meanSign)
 
-	size, err := strconv.Atoi(os.Args[2])
-	if err != nil {
-		log.Fatal(err)
+	var meanVerify float64
+	for _, v := range timesVerify {
+		meanVerify += v
+	}
+	meanVerify /= float64(numRuns)
+	stdDevVerify := stdDev(timesVerify, meanVerify)
+
+	fmt.Printf("Total avg sign time was %.6f(%.6f)\n", meanSign, stdDevSign)
+	fmt.Printf("Total avg verify time was %.6f(%.6f)\n", meanVerify, stdDevVerify)
+
+
+	var timesSignSingle []float64
+	var timesVerifySingle []float64
+	var numRunsSingle int
+	msg := []byte("Hello World")
+	msgHash := blake2b.Sum256(msg)
+	hash := msgHash[:]
+
+	for i := 0; i < 10; i++ {
+		privkey, err := crypto.GenerateKey()
+		if err != nil {
+			log.Fatal(err)
+		}
+		tStart := time.Now()
+		signature, err := crypto.Sign(hash, privkey)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tEnd := time.Since(tStart)
+		timesSignSingle = append(timesSignSingle, tEnd.Seconds())
+
+
+		pubkey, _ := crypto.Ecrecover(hash, signature)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tStart = time.Now()
+		crypto.VerifySignature(pubkey, hash, signature)
+		tEnd = time.Since(tStart)
+		timesVerifySingle = append(timesVerifySingle, tEnd.Seconds())
+
+		numRunsSingle += 1
 	}
 
-	sb, err := rand.Int(rand.Reader, new(big.Int).SetInt64(int64(size)))
-	if err != nil {
-		log.Fatal(err)
+	var meanSignSingle float64
+	for _, v := range timesSignSingle {
+		meanSignSingle += v
 	}
-	s := int(sb.Int64())
+	meanSignSingle /= float64(numRunsSingle)
+	stdDevSignSingle := stdDev(timesSignSingle, meanSignSingle)
 
-	keyring, err := ring.GenNewKeyRing(size, privkey, s)
-	if err != nil {
-		log.Fatal(err)
+	var meanVerifySingle float64
+	for _, v := range timesVerifySingle {
+		meanVerifySingle += v
 	}
+	meanVerifySingle /= float64(numRunsSingle)
+	stdDevVerifySingle := stdDev(timesVerifySingle, meanVerifySingle)
 
-	tStart := time.Now()
-	sig, err := ring.Sign(msgHash, keyring, privkey, s)
-	if err != nil {
-		log.Fatal(err)
-	}
-	tEnd := time.Since(tStart)
-	fmt.Printf("It took %s to sign a ring with %d public keys\n", tEnd, size)
+	fmt.Println("Simple ECC signature:")
+	fmt.Printf("Total avg sign time was %.10f(%.10f)\n", meanSignSingle, stdDevSignSingle)
+	fmt.Printf("Total avg verify time was %.10f(%.10f)\n", meanVerifySingle, stdDevVerifySingle)
 
-	tStart = time.Now()
-	ring.Verify(sig)
-	tEnd = time.Since(tStart)
-	fmt.Printf("It took %s to verify a ring with %d public keys\n", tEnd, size)
+
 
 	os.Exit(0)
+}
+
+func stdDev(numbers []float64, mean float64) float64 {
+	total := 0.0
+	for _, number := range numbers {
+		total += math.Pow(number-mean, 2)
+	}
+	variance := total / float64(len(numbers)-1)
+	return math.Sqrt(variance)
 }

@@ -20,7 +20,7 @@ type RingSign struct {
 	Size  int              // size of ring
 	M     [32]byte         // message
 	C     *big.Int         // ring signature value
-	S     []*big.Int       // ring signature values
+	S     []*big.Int       // faked secret keys
 	L     L                // array of public keys
 	I     *ecdsa.PublicKey // key image
 	Curve elliptic.Curve
