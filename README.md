@@ -38,9 +38,13 @@ $ lrs --link /path/to/signature1.sig /path/to/signature2.sig
 
 ### Benchmark 1000 public keys
 ```sh
-$ lrs --benchmark 1000
-It took 792.335683ms to sign a ring with 1000 public keys
-It took 788.610137ms to verify a ring with 1000 public keys
+$ lrs --benchmark 10
+Linked ring signature:
+Total avg sign time was 0.009010(0.000303)
+Total avg verify time was 0.008033(0.000261)
+Simple ECC signature:
+Total avg sign time was 0.0001060737(0.0000261440)
+Total avg verify time was 0.0000000465(0.0000000083)
 ```
 
 ## References

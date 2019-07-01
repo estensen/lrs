@@ -336,13 +336,11 @@ func benchmark() {
 			log.Fatal(err)
 		}
 		tEnd := time.Since(tStart)
-		fmt.Printf("It took %s to sign a ring with %d public keys\n", tEnd, size)
 		timesSign = append(timesSign, tEnd.Seconds())
 
 		tStart = time.Now()
 		ring.Verify(sig)
 		tEnd = time.Since(tStart)
-		fmt.Printf("It took %s to verify a ring with %d public keys\n", tEnd, size)
 		timesVerify = append(timesVerify, tEnd.Seconds())
 
 		numRuns += 1
