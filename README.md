@@ -6,7 +6,7 @@ Implementation of linkable ring signatures using elliptic curve cryptography in 
 ### Installing
 To use start using the linkable ring signatures, install Go 1.10 or above and run `go get`:
 ```sh
-$ go get https://github.com/estensen/linkable-ring-signatures/...
+$ go get github.com/estensen/lrs/...
 $ go install
 ```
 
