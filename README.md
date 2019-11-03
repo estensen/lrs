@@ -4,9 +4,8 @@ Implementation of linkable ring signatures using elliptic curve cryptography in 
 ## Getting Started
 
 ### Installing
-To use start using the linkable ring signatures, install Go 1.12 or above and run `go get`:
+To start using linkable ring signatures, install Go 1.12 or above and build:
 ```sh
-$ go get ./...
 $ go build
 ```
 
