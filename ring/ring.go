@@ -202,7 +202,7 @@ func Hash(m [32]byte, l, r []byte) [32]byte {
 }
 
 // Sign creates a ring signature from list of public keys given inputs:
-// msg: byte array, message to be signed
+// m: byte array, message to be signed
 // L: array of *ecdsa.PublicKeys to be included in the ring
 // privKey: *ecdsa.PrivateKey of signer
 // s: index of signer in ring
